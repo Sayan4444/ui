@@ -971,7 +971,6 @@ const WecsDetailsPanel = ({
                     e.stopPropagation(); // Stop clicks inside this box from bubbling
                   }}
                 >
-                  {/* Terminal header */}
                   <TerminalHeader
                     theme={theme}
                     name={name}
