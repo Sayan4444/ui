@@ -865,8 +865,8 @@ const WecsDetailsPanel = ({
 
               {tabValue === 1 && <RenderEdit editFormat={editFormat} handleFormatChange={handleFormatChange} editedManifest={editedManifest} handleEditorChange={handleEditorChange} handleUpdate={handleUpdate} theme={theme} jsonToYaml={jsonToYaml} />}
 
-
-              {tabValue === 2 && type.toLowerCase() !== "cluster" && (
+            
+              {/* {tabValue === 2 && type.toLowerCase() !== "cluster" && (
                 <Box
                   sx={{
                     height: "500px",
@@ -880,6 +880,60 @@ const WecsDetailsPanel = ({
                     ref={terminalRef}
                     style={{ height: "100%", width: "100%" }}
                   />
+                </Box>
+              )} */}
+                {tabValue === 2 && type.toLowerCase() !== "cluster" && (
+                <Box
+                  sx={{
+                    height: isTerminalMaximized ? "calc(100vh - 220px)" : "500px",
+                    bgcolor: theme === "dark" ? "#1A1A1A" : "#FAFAFA",
+                    borderRadius: "8px",
+                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1)",
+                    overflow: "hidden",
+                    border: theme === "dark" ? "1px solid #333" : "1px solid #E0E0E0",
+                    p: 0,
+                    pb: 0.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    position: "relative",
+                    transition: "height 0.3s ease-in-out"
+                  }}
+                  onClick={(e: React.MouseEvent<HTMLDivElement>) => {
+                    e.stopPropagation(); // Stop clicks inside this box from bubbling
+                  }}
+                >
+                  <TerminalHeader
+                    theme={theme}
+                    name={name}
+                    setIsContainerSelectActive={setIsContainerSelectActive}
+                    selectedContainer={selectedContainer}
+                    handleContainerChange={handleContainerChange}
+                    loadingContainers={loadingContainers}
+                    containers={containers}
+                    handleClearTerminal={handleClearTerminal}
+                    isTerminalMaximized={isTerminalMaximized}
+                    setIsTerminalMaximized={setIsTerminalMaximized}
+                  />
+                  
+                  {/* Terminal content */}
+                  <Box
+                    sx={{
+                      flex: 1,
+                      p: 1,
+                      overflow: "hidden"
+                  }}
+                >
+                  <div
+                      // key={execTerminalKey}
+                      ref={terminalRef}
+                      style={{ 
+                        height: "100%", 
+                        width: "100%", 
+                        padding: "4px",
+                        overflow: "hidden"
+                      }}
+                  />
+                  </Box>
                 </Box>
               )}
               {tabValue === 3 && type.toLowerCase() === "pod" && (
@@ -925,7 +979,7 @@ const WecsDetailsPanel = ({
                 >
                   <div
                       key={execTerminalKey}
-                    ref={execTerminalRef}
+                      ref={execTerminalRef}
                       style={{ 
                         height: "100%", 
                         width: "100%", 
