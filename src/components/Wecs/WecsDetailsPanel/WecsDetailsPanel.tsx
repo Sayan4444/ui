@@ -4,34 +4,27 @@ import {
   Typography,
   IconButton,
   Tabs,
-  Tab,
-  Table,
-  TableRow,
-  TableCell,
-  TableBody,
   Alert,
   CircularProgress,
   Tooltip,
   Button,
   Stack,
   Snackbar,
-  styled,
-  Chip,
-  Select,
-  MenuItem,
-  FormControl,
   SelectChangeEvent,
 } from "@mui/material";
-import { FiX, FiGitPullRequest, FiTrash2, FiMaximize2, FiMinimize2} from "react-icons/fi";
+import { FiX, FiGitPullRequest, FiTrash2} from "react-icons/fi";
 import Editor from "@monaco-editor/react";
 import jsyaml from "js-yaml";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import "xterm/css/xterm.css";
-import { ResourceItem } from "./TreeViewComponent";
-import useTheme from "../stores/themeStore";
+import { ResourceItem } from "../../TreeViewComponent";
+import useTheme from "../../../stores/themeStore";
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import { api, getWebSocketUrl } from "../lib/api";
+import { api, getWebSocketUrl } from "../../../lib/api";
+import StyledTab from "./StyledTab";
+import RenderSummary from "./RenderSummary";
+import TerminalHeader from "./TerminalHeader";
 
 interface WecsDetailsProps {
   namespace: string;
@@ -46,7 +39,7 @@ interface WecsDetailsProps {
   cluster: string;
 }
 
-interface ResourceInfo {
+export interface ResourceInfo {
   name: string;
   namespace: string;
   kind: string;
@@ -56,7 +49,7 @@ interface ResourceInfo {
   manifest: string;
 }
 
-interface ClusterDetails {
+export interface ClusterDetails {
   clusterName: string;
   contexts: { name: string; cluster: string }[] | null;
   itsManagedClusters: {
@@ -67,44 +60,11 @@ interface ClusterDetails {
   }[];
 }
 
-interface ContainerInfo {
+export interface ContainerInfo {
   ContainerName: string;
   Image: string;
 }
 
-const StyledTab = styled(Tab)(({ theme }) => {
-  const appTheme = useTheme((state) => state.theme);
-  return {
-    textTransform: "none",
-    fontWeight: 500,
-    fontSize: "0.8rem",
-    color: appTheme === "dark" ? "#d4d4d4" : theme.palette.grey[600],
-    padding: "10px 17px",
-    minHeight: "40px",
-    marginLeft: "16px",
-    marginTop: "4px",
-    borderRadius: "12px 12px 12px 12px",
-    border: "1px solid transparent",
-    transition: "background-color 0.2s ease, border-color 0.2s ease",
-    "&.Mui-selected": {
-      color: "#1976d2",
-      fontWeight: 600,
-      border: "1px solid rgba(25, 118, 210, 0.7)",
-      boxShadow: `
-        -2px 0 6px rgba(47, 134, 255, 0.2),
-        2px 0 6px rgba(47, 134, 255, 0.2),
-        0 -2px 6px rgba(47, 134, 255, 0.2),
-        0 2px 6px rgba(47, 134, 255, 0.2)
-      `,
-      zIndex: 1,
-      position: "relative",
-    },
-    "&:hover": {
-      backgroundColor: appTheme === "dark" ? "#333" : "#f4f4f4",
-      border: appTheme === "dark" ? "1px solid #444" : "1px solid rgba(0, 0, 0, 0.1)",
-    },
-  };
-});
 
 const WecsDetailsPanel = ({
   namespace,
@@ -764,186 +724,11 @@ const WecsDetailsPanel = ({
     setSnackbarOpen(false);
   };
 
-  const renderSummary = () => {
-    if (type.toLowerCase() === "cluster" && clusterDetails) {
-      // Render cluster-specific information
-      const clusterInfo = clusterDetails.itsManagedClusters && clusterDetails.itsManagedClusters.length > 0 
-        ? clusterDetails.itsManagedClusters[0] 
-        : null;
-      
-      return (
-        <Box>
-          <Table sx={{ borderRadius: 1, mb: 2 }}>
-            <TableBody>
-              {[
-                { label: "KIND", value: "Cluster" },
-                { label: "NAME", value: clusterDetails.clusterName },
-                { label: "CONTEXT", value: clusterInfo?.context || "Unknown" },
-                { label: "CREATED AT", value: clusterInfo ? `${new Date(clusterInfo.creationTime).toLocaleString()} (${calculateAge(clusterInfo.creationTime)})` : "Unknown" },
-              ].map((row, index) => (
-                <TableRow key={index}>
-                  <TableCell
-                    sx={{
-                      borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                      color: theme === "dark" ? "#D4D4D4" : "#333333",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      width: '150px',
-                      padding: '10px 16px'
-                    }}
-                  >
-                    {row.label}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                      color: theme === "dark" ? "#D4D4D4" : "#333333",
-                      fontSize: "14px",
-                      padding: '10px 16px'
-                    }}
-                  >
-                    {row.value}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          
-          {/* Display cluster labels if available */}
-          {clusterInfo && clusterInfo.labels && Object.keys(clusterInfo.labels).length > 0 && (
-            <Table sx={{ borderRadius: 1 }}>
-              <TableBody>
-                <TableRow>
-                  <TableCell
-                    sx={{
-                      borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                      color: theme === "dark" ? "#D4D4D4" : "#333333",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      width: '150px',
-                      padding: '10px 16px',
-                      verticalAlign: 'top'
-                    }}
-                  >
-                    LABELS
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                      color: theme === "dark" ? "#D4D4D4" : "#333333",
-                      fontSize: "14px",
-                      padding: '10px 16px'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {clusterInfo.labels && Object.entries(clusterInfo.labels).map(([key, value], index) => (
-                        <Chip
-                          key={index}
-                          label={`${key}: ${value}`}
-                          size="small"
-                          sx={{
-                            mr: 1,
-                            mb: 1,
-                            backgroundColor: theme === "dark" ? "#334155" : undefined,
-                            color: theme === "dark" ? "#fff" : undefined,
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          )}
-        </Box>
-      );
+  const handleClearTerminal = () => {
+    if (execTerminalInstance.current) {
+      execTerminalInstance.current.clear();
     }
-    
-    // Original resource rendering for non-cluster types
-    if (!resource) return null;
-    
-    // Create a basic summary table for any resource
-    const summaryTable = (
-      <Table sx={{ borderRadius: 1 }}>
-        <TableBody>
-          {[
-            { label: "KIND", value: resource.kind },
-            { label: "NAME", value: resource.name },
-            { label: "NAMESPACE", value: resource.namespace },
-            { label: "CREATED AT", value: `${resource.createdAt} (${resource.age})` },
-          ].map((row, index) => (
-            <TableRow key={index}>
-              <TableCell
-                sx={{
-                  borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                  color: theme === "dark" ? "#D4D4D4" : "#333333",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  width: '150px',
-                  padding: '10px 16px'
-                }}
-              >
-                {row.label}
-              </TableCell>
-              <TableCell
-                sx={{
-                  borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                  color: theme === "dark" ? "#D4D4D4" : "#333333",
-                  fontSize: "14px",
-                  padding: '10px 16px'
-                }}
-              >
-                {row.value}
-              </TableCell>
-            </TableRow>
-          ))}
-          {resourceData?.metadata?.labels && Object.keys(resourceData.metadata.labels).length > 0 && (
-            <TableRow>
-              <TableCell
-                sx={{
-                  borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                  color: theme === "dark" ? "#D4D4D4" : "#333333",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  width: '150px',
-                  padding: '10px 16px',
-                  verticalAlign: 'top'
-                }}
-              >
-                LABELS
-              </TableCell>
-              <TableCell
-                sx={{
-                  borderBottom: theme === "dark" ? "1px solid #444" : "1px solid #e0e0e0",
-                  color: theme === "dark" ? "#D4D4D4" : "#333333",
-                  fontSize: "14px",
-                  padding: '10px 16px'
-                }}
-              >
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {resourceData.metadata.labels && Object.entries(resourceData.metadata.labels).map(([key, value], index) => (
-                    <Chip
-                      key={index}
-                      label={`${key}: ${value}`}
-                      size="small"
-                      sx={{
-                        mr: 1,
-                        mb: 1,
-                        backgroundColor: theme === "dark" ? "#334155" : undefined,
-                        color: theme === "dark" ? "#fff" : undefined,
-                      }}
-                    />
-                  ))}
-                </Box>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    );
-    
-    return summaryTable;
-  };
+  }
 
   return (
     <Box
@@ -1074,7 +859,7 @@ const WecsDetailsPanel = ({
             }}
           >
             <Box sx={{ mt: 1, p: 1 }}>
-              {tabValue === 0 && renderSummary()}
+              {tabValue === 0 && <RenderSummary type={type} clusterDetails={clusterDetails} calculateAge={calculateAge} theme={theme} resource={resource} resourceData={resourceData} />}
               {tabValue === 1 && (
                 <Box sx={{ display: "flex", flexDirection: "column" }}>
                   <Stack direction="row" spacing={4} mb={3} ml={4}>
@@ -1187,194 +972,18 @@ const WecsDetailsPanel = ({
                   }}
                 >
                   {/* Terminal header */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                    alignItems: "center",
-                      justifyContent: "space-between",
-                      px: 2,
-                      py: 0.75,
-                      backgroundColor: theme === "dark" ? "#252525" : "#F0F0F0",
-                      borderBottom: theme === "dark" ? "1px solid #333" : "1px solid #E0E0E0",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                      color: theme === "dark" ? "#CCC" : "#444",
-                      fontFamily: '"Segoe UI", "Helvetica", "Arial", sans-serif'
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <span 
-                        style={{ 
-                          display: "inline-block", 
-                          width: "12px", 
-                          height: "12px", 
-                          borderRadius: "50%", 
-                          backgroundColor: "#98C379", 
-                          marginRight: "8px"
-                        }} 
-                      />
-                      {name}
-                    </Box>
-                    
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      {/* Container selection dropdown */}
-                      <FormControl 
-                        size="small" 
-                        className="container-dropdown"
-                        onMouseDown={() => {
-                          console.log("Container dropdown interaction started");
-                          setIsContainerSelectActive(true);
-                        }}
-                        sx={{ 
-                          minWidth: 150,
-                          "& .MuiInputBase-root": {
-                            color: theme === "dark" ? "#CCC" : "#444",
-                            fontSize: "13px",
-                            backgroundColor: theme === "dark" ? "#333" : "#FFF",
-                            border: theme === "dark" ? "1px solid #444" : "1px solid #DDD",
-                            borderRadius: "4px",
-                            height: "30px"
-                          },
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            border: "none"
-                          }
-                        }}
-                        onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        <Select
-                          value={selectedContainer}
-                          onChange={handleContainerChange}
-                          displayEmpty
-                          onMouseDown={(e: React.MouseEvent<HTMLElement>) => {
-                            e.stopPropagation();
-                            console.log("Select mousedown");
-                            setIsContainerSelectActive(true);
-                          }}
-                          onClose={() => {
-                            console.log("Select dropdown closed");
-                            // Delay setting this to false to allow click events to process first
-                            setTimeout(() => setIsContainerSelectActive(false), 300);
-                          }}
-                          MenuProps={{
-                            slotProps: {
-                              paper: {
-                                onClick: (e: React.MouseEvent<HTMLDivElement>) => {
-                                  e.stopPropagation();
-                                },
-                                onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => {
-                                  e.stopPropagation();
-                                  setIsContainerSelectActive(true);
-                                },
-                                style: {
-                                  zIndex: 9999
-                                }
-                              },
-                              root: {
-                                onClick: (e: React.MouseEvent<HTMLDivElement>) => {
-                                  e.stopPropagation();
-                                },
-                                onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => {
-                                  e.stopPropagation();
-                                  setIsContainerSelectActive(true);
-                                }
-                              }
-                            },
-                            // Prevent menu from closing the panel by setting anchorOrigin and transformOrigin
-                            anchorOrigin: {
-                              vertical: 'bottom',
-                              horizontal: 'left',
-                            },
-                            transformOrigin: {
-                              vertical: 'top',
-                              horizontal: 'left',
-                            }
-                          }}
-                          renderValue={(value) => (
-                            <Box 
-                              sx={{ display: "flex", alignItems: "center" }}
-                              onClick={(e: React.MouseEvent<HTMLDivElement>) => {
-                                e.stopPropagation();
-                              }}
-                            >
-                              {loadingContainers ? (
-                                <CircularProgress size={14} sx={{ mr: 1 }} />
-                              ) : (
-                                <span className="fas fa-cube" style={{ marginRight: "8px", fontSize: "12px" }} />
-                              )}
-                              {value || "Select container"}
-                            </Box>
-                          )}
-                        >
-                          {containers.map((container) => (
-                            <MenuItem 
-                              key={container.ContainerName} 
-                              value={container.ContainerName}
-                              sx={{
-                                fontSize: "13px",
-                                py: 0.75
-                              }}
-                              onMouseDown={(e: React.MouseEvent<HTMLLIElement>) => {
-                                e.stopPropagation();
-                                console.log(`MenuItem ${container.ContainerName} mousedown`);
-                                setIsContainerSelectActive(true);
-                              }}
-                            >
-                              <Box sx={{ display: "flex", flexDirection: "column" }}>
-                                <Typography variant="body2">{container.ContainerName}</Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ fontSize: "11px" }}>
-                                  {container.Image.length > 40 ? container.Image.substring(0, 37) + '...' : container.Image}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                          {containers.length === 0 && !loadingContainers && (
-                            <MenuItem disabled>
-                              <Typography variant="body2">No containers found</Typography>
-                            </MenuItem>
-                          )}
-                        </Select>
-                      </FormControl>
-                      
-                      {/* Existing buttons */}
-                      <Tooltip title="Clear Terminal">
-                        <IconButton 
-                          size="small" 
-                          onClick={() => {
-                            if (execTerminalInstance.current) {
-                              execTerminalInstance.current.clear();
-                            }
-                          }}
-                          sx={{ 
-                            color: theme === "dark" ? "#CCC" : "#666",
-                            padding: "2px",
-                            '&:hover': {
-                              backgroundColor: theme === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
-                            }
-                          }}
-                        >
-                          <FiTrash2 size={16} />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      <Tooltip title={isTerminalMaximized ? "Minimize" : "Maximize"}>
-                        <IconButton 
-                          size="small" 
-                          onClick={() => setIsTerminalMaximized(!isTerminalMaximized)}
-                          sx={{ 
-                            color: theme === "dark" ? "#CCC" : "#666",
-                            padding: "2px",
-                            '&:hover': {
-                              backgroundColor: theme === "dark" ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'
-                            }
-                          }}
-                        >
-                          {isTerminalMaximized ? <FiMinimize2 size={16} /> : <FiMaximize2 size={16} />}
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </Box>
+                  <TerminalHeader
+                    theme={theme}
+                    name={name}
+                    setIsContainerSelectActive={setIsContainerSelectActive}
+                    selectedContainer={selectedContainer}
+                    handleContainerChange={handleContainerChange}
+                    loadingContainers={loadingContainers}
+                    containers={containers}
+                    handleClearTerminal={handleClearTerminal}
+                    isTerminalMaximized={isTerminalMaximized}
+                    setIsTerminalMaximized={setIsTerminalMaximized}
+                  />
                   
                   {/* Terminal content */}
                   <Box
