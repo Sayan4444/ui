@@ -13,7 +13,6 @@ import {
   SelectChangeEvent,
 } from "@mui/material";
 import { FiX, FiGitPullRequest, FiTrash2} from "react-icons/fi";
-import Editor from "@monaco-editor/react";
 import jsyaml from "js-yaml";
 import { Terminal } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
@@ -25,6 +24,7 @@ import { api, getWebSocketUrl } from "../../../lib/api";
 import StyledTab from "./StyledTab";
 import RenderSummary from "./RenderSummary";
 import TerminalHeader from "./TerminalHeader";
+import RenderEdit from "./RenderEdit";
 
 interface WecsDetailsProps {
   namespace: string;
@@ -659,15 +659,7 @@ const WecsDetailsPanel = ({
     setTabValue(newValue);
   };
 
-  const jsonToYaml = (jsonString: string) => {
-    try {
-      const jsonObj = JSON.parse(jsonString);
-      return jsyaml.dump(jsonObj, { indent: 2 });
-    } catch (error) {
-      console.log(error);
-      return jsonString;
-    }
-  };
+
 
   const yamlToJson = (yamlString: string) => {
     try {
@@ -710,7 +702,7 @@ const WecsDetailsPanel = ({
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = () => {
     if (!resource) return;
 
     const resourceName = resource.name;
@@ -729,6 +721,16 @@ const WecsDetailsPanel = ({
       execTerminalInstance.current.clear();
     }
   }
+
+  const jsonToYaml = (jsonString: string) => {
+    try {
+      const jsonObj = JSON.parse(jsonString);
+      return jsyaml.dump(jsonObj, { indent: 2 });
+    } catch (error) {
+      console.log(error);
+      return jsonString;
+    }
+  };
 
   return (
     <Box
@@ -844,7 +846,7 @@ const WecsDetailsPanel = ({
               <StyledTab label={<span><i className="fa fa-terminal" style={{ marginRight: "8px" }}></i>EXEC PODS</span>} />
             )}
           </Tabs>
-
+            {/* Entire tab is rendered by this Box */}
           <Box
             sx={{
               backgroundColor: theme === "dark" ? "#00000033" : "rgba(255, 255, 255, 0.8)",
@@ -860,81 +862,10 @@ const WecsDetailsPanel = ({
           >
             <Box sx={{ mt: 1, p: 1 }}>
               {tabValue === 0 && <RenderSummary type={type} clusterDetails={clusterDetails} calculateAge={calculateAge} theme={theme} resource={resource} resourceData={resourceData} />}
-              {tabValue === 1 && (
-                <Box sx={{ display: "flex", flexDirection: "column" }}>
-                  <Stack direction="row" spacing={4} mb={3} ml={4}>
-                    <Button
-                      variant={editFormat === "yaml" ? "contained" : "outlined"}
-                      onClick={() => handleFormatChange("yaml")}
-                      sx={{
-                        textTransform: "none",
-                        backgroundColor: "#2F86FF",
-                        borderRadius: "8px",
-                        color: "#fff",
-                        "&:hover": {
-                          backgroundColor: "#1565c0",
-                        },
-                      }}
-                    >
-                      YAML
-                    </Button>
-                    <Button
-                      variant={editFormat === "json" ? "contained" : "outlined"}
-                      onClick={() => handleFormatChange("json")}
-                      sx={{
-                        textTransform: "none",
-                        backgroundColor: "#2F86FF",
-                        borderRadius: "8px",
-                        color: "#fff",
-                        "&:hover": {
-                          backgroundColor: "#1565c0",
-                        },
-                      }}
-                    >
-                      JSON
-                    </Button>
-                  </Stack>
-                  <Box sx={{ overflow: "auto", maxHeight: "500px" }}>
-                    <Editor
-                      height="500px"
-                      language={editFormat}
-                      value={
-                        editFormat === "yaml"
-                          ? jsonToYaml(editedManifest)
-                          : editedManifest || "No manifest available"
-                      }
-                      onChange={handleEditorChange}
-                      theme={theme === "dark" ? "vs-dark" : "light"}
-                      options={{
-                        minimap: { enabled: false },
-                        fontSize: 14,
-                        lineNumbers: "on",
-                        scrollBeyondLastLine: false,
-                        readOnly: false,
-                        automaticLayout: true,
-                        wordWrap: "on",
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2 }}>
-                    <Button
-                      variant="contained"
-                      onClick={handleUpdate}
-                      sx={{
-                        textTransform: "none",
-                        backgroundColor: "#2F86FF",
-                        borderRadius: "8px",
-                        color: "#fff",
-                        "&:hover": {
-                          backgroundColor: "#1565c0",
-                        },
-                      }}
-                    >
-                      Update
-                    </Button>
-                  </Box>
-                </Box>
-              )}
+
+              {tabValue === 1 && <RenderEdit editFormat={editFormat} handleFormatChange={handleFormatChange} editedManifest={editedManifest} handleEditorChange={handleEditorChange} handleUpdate={handleUpdate} theme={theme} jsonToYaml={jsonToYaml} />}
+
+
               {tabValue === 2 && type.toLowerCase() !== "cluster" && (
                 <Box
                   sx={{
